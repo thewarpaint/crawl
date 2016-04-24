@@ -1,6 +1,27 @@
 'use strict';
 
-var dom = require('xmldom').DOMParser,
+var argv = require('yargs')
+      .usage('Usage: $0 [options]')
+      .example('$0 --domain https://example.com/ --output example-sitemap.xml',
+        'generate a sitemap for https://example.com/ and save in example-sitemap.xml')
+      .demand('url')
+      .alias('url', 'u')
+      .nargs('url', 1)
+      .describe('url', 'Domain to analyze, if no protocol is specified, http is assumed')
+      .alias('output', 'o')
+      .nargs('output', 1)
+      .describe('output', 'File in the current directory to write the sitemap to')
+      .alias('debug', 'd')
+      .describe('debug', 'Show ignored and failing URLs')
+      .alias('pool-size', 'p')
+      .describe('pool-size', 'Maximum number of concurrent connections')
+      .nargs('pool-size', 1)
+      .alias('extras', 'e')
+      .describe('extras', 'Include extra static assets (JS, CSS) in the sitemap (experimental, not standard)')
+      .default({ debug: false, extras: false, output: 'sitemap.xml', 'pool-size': 8 })
+      .argv,
+    dom = require('xmldom').DOMParser,
+    fs = require('fs'),
     request = require('request'),
     xmlparser = require('js2xmlparser'),
     xpath = require('xpath');
@@ -14,9 +35,9 @@ var sitemap = {
     errorUrls = {},
     ignoredUrls = {},
     processedCount = 0,
-    rootUrl = 'http://example.com/',
-    pooledRequest = request.defaults({ pool: { maxSockets: 8 } }),
-    rootInfo = getUrlInfo(rootUrl),
+    pooledRequest = request.defaults({ pool: { maxSockets: argv['pool-size'] } }),
+    rootInfo = getUrlInfo(argv.url),
+    rootUrl = rootInfo.fullUrl,
     imageTags = ['img', 'svg'],
     imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
 
@@ -29,10 +50,13 @@ function getSitemap(url) {
     let page = {
       loc: url,
       'image:image': [],
-      'script:script': [],
-      'style:style': [],
       'video:video': []
     };
+
+    if(argv.extras) {
+      page['script:script'] = [];
+      page['style:style'] = [];
+    }
 
     sitemap.url.push(page);
     uniqueUrls[url] = true;
@@ -45,8 +69,8 @@ function getSitemap(url) {
         }
 
         let attributes = ['href', 'src'],
-        doc = new dom({ errorHandler: function() {} }).parseFromString(body),
-        nodes = [];
+            doc = new dom({ errorHandler: function() {} }).parseFromString(body),
+            nodes = [];
 
         attributes.forEach(function (attribute) {
           try {
@@ -73,11 +97,15 @@ function getSitemap(url) {
                 details['image:loc'] = info.fullUrl;
                 page['image:image'].push(details);
               } else if(isCSSNode(node)) {
-                details.loc = info.fullUrl;
-                page['style:style'].push(details);
+                if(argv.extras) {
+                  details['style:loc'] = info.fullUrl;
+                  page['style:style'].push(details);
+                }
               } else if(isJSNode(node)) {
-                details.loc = info.fullUrl;
-                page['script:script'].push(details);
+                if(argv.extras) {
+                  details['script:loc'] = info.fullUrl;
+                  page['script:script'].push(details);
+                }
               } else {
                 getSitemap(info.fullUrl);
               }
@@ -102,9 +130,20 @@ function getSitemap(url) {
       process.stdout.write(`Processed: ${ processedCount }     Pending: ${ pendingCount }     \r`);
 
       if(!pendingCount) {
-        console.log('Ignored:', JSON.stringify(ignoredUrls, null, 2));
-        console.log('Failed:', JSON.stringify(errorUrls, null, 2));
-        console.log(xmlparser('urlset', sitemap));
+        console.log(`Processed URLs: ${ processedCount }`);
+
+        if(argv.debug) {
+          console.log('Ignored:', JSON.stringify(ignoredUrls, null, 2));
+          console.log('Failed:', JSON.stringify(errorUrls, null, 2));
+        }
+
+        fs.writeFile(`./${ argv.output }`, xmlparser('urlset', sitemap), function (error) {
+          if(error) {
+            console.log(`Writing ./${ argv.output } failed: ${ error }`);
+          } else {
+            console.log(`Sitemap saved to ./${ argv.output }`);
+          }
+        });
       }
     });
   }
