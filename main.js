@@ -140,13 +140,7 @@ function getSitemap(url) {
           console.log('Failed:', JSON.stringify(errorUrls, null, 2));
         }
 
-        fs.writeFile(`./${ argv.output }`, xmlparser('urlset', sitemap), function (error) {
-          if(error) {
-            console.log(`Writing ./${ argv.output } failed: ${ error }`);
-          } else {
-            console.log(`Sitemap saved to ./${ argv.output }`);
-          }
-        });
+        saveXMLSitemap(sitemap);
       }
     });
   }
@@ -221,6 +215,16 @@ function formatDate(dateString) {
 
 function getMD5Hash(data) {
   return crypto.createHash('md5').update(data).digest('hex');
+}
+
+function saveXMLSitemap(sitemap) {
+  fs.writeFile(`./${ argv.output }`, xmlparser('urlset', sitemap), function (error) {
+    if(error) {
+      console.log(`Writing ./${ argv.output } failed: ${ error }`);
+    } else {
+      console.log(`Sitemap saved to ./${ argv.output }`);
+    }
+  });
 }
 
 main();
