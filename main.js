@@ -2,10 +2,13 @@
 
 var dom = require('xmldom').DOMParser,
     request = require('request'),
+    xmlparser = require('js2xmlparser'),
     xpath = require('xpath');
 
 // Globals
-var sitemap = [],
+var sitemap = {
+      url: []
+    },
     uniqueUrls = {},
     pendingUrls = {},
     errorUrls = {},
@@ -24,14 +27,14 @@ function main() {
 function getSitemap(url) {
   if(!uniqueUrls[url]) {
     let page = {
-      url,
-      images: [],
-      scripts: [],
-      styles: [],
-      videos: []
+      loc: url,
+      'image:image': [],
+      'script:script': [],
+      'style:style': [],
+      'video:video': []
     };
 
-    sitemap.push(page);
+    sitemap.url.push(page);
     uniqueUrls[url] = true;
     pendingUrls[url] = true;
 
@@ -54,22 +57,23 @@ function getSitemap(url) {
             let info = getUrlInfo(node.nodeValue, rootInfo);
 
             if(info.follow) {
-              let details = {
-                loc: info.fullUrl
-              };
+              let details = {};
 
               if(isImageNode(node)) {
                 let alt = node.ownerElement.getAttribute('alt');
 
                 if(alt) {
-                  details.caption = alt;
+                  details['image:caption'] = alt;
                 }
 
-                page.images.push(details);
+                details['image:loc'] = info.fullUrl;
+                page['image:image'].push(details);
               } else if(isCSSNode(node)) {
-                page.styles.push(details);
+                details.loc = info.fullUrl;
+                page['style:style'].push(details);
               } else if(isJSNode(node)) {
-                page.scripts.push(details);
+                details.loc = info.fullUrl;
+                page['script:script'].push(details);
               } else {
                 getSitemap(info.fullUrl);
               }
@@ -94,9 +98,9 @@ function getSitemap(url) {
       process.stdout.write(`Processed: ${ processedCount }     Pending: ${ pendingCount }     \r`);
 
       if(!pendingCount) {
-        console.log(JSON.stringify(sitemap, null, 2));
         console.log('Ignored:', JSON.stringify(ignoredUrls, null, 2));
         console.log('Failed:', JSON.stringify(errorUrls, null, 2));
+        console.log(xmlparser('urlset', sitemap));
       }
     });
   }
