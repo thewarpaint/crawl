@@ -20,6 +20,7 @@ var argv = require('yargs')
       .describe('extras', 'Include extra static assets (JS, CSS) in the sitemap (experimental, not standard)')
       .default({ debug: false, extras: false, output: 'sitemap.xml', 'pool-size': 8 })
       .argv,
+    crypto = require('crypto'),
     dom = require('xmldom').DOMParser,
     fs = require('fs'),
     request = require('request'),
@@ -67,6 +68,8 @@ function getSitemap(url) {
         if(response.headers['last-modified']) {
           page.lastmod = formatDate(response.headers['last-modified']);
         }
+
+        page['content:hash'] = getMD5Hash(body);
 
         let attributes = ['href', 'src'],
             doc = new dom({ errorHandler: function() {} }).parseFromString(body),
@@ -214,6 +217,10 @@ function formatDate(dateString) {
   let date = new Date(dateString);
 
   return `${ date.getFullYear() }-${ datePad(date.getMonth() + 1) }-${ date.getDate() }`;
+}
+
+function getMD5Hash(data) {
+  return crypto.createHash('md5').update(data).digest('hex');
 }
 
 main();
