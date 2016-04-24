@@ -40,6 +40,10 @@ function getSitemap(url) {
 
     pooledRequest(url, function (error, response, body) {
       if (!error && response.statusCode == 200) {
+        if(response.headers['last-modified']) {
+          page.lastmod = formatDate(response.headers['last-modified']);
+        }
+
         let attributes = ['href', 'src'],
         doc = new dom({ errorHandler: function() {} }).parseFromString(body),
         nodes = [];
@@ -161,6 +165,16 @@ function isImageNode(node) {
   let extension = node.nodeValue.split('.').pop();
 
   return imageTags.indexOf(node.ownerElement.tagName) !== -1 || imageExtensions.indexOf(extension) !== -1;
+}
+
+function datePad(number) {
+  return number < 10 ? '0' + number : number;
+}
+
+function formatDate(dateString) {
+  let date = new Date(dateString);
+
+  return `${ date.getFullYear() }-${ datePad(date.getMonth() + 1) }-${ date.getDate() }`;
 }
 
 main();
