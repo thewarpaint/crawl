@@ -91,7 +91,7 @@ function getSitemap(url) {
 
       let pendingCount = Object.keys(pendingUrls).length;
 
-      process.stdout.write(`Processed: ${ processedCount }\t Pending: ${ pendingCount }\t\t\r`);
+      process.stdout.write(`Processed: ${ processedCount }     Pending: ${ pendingCount }     \r`);
 
       if(!pendingCount) {
         console.log(JSON.stringify(sitemap, null, 2));
