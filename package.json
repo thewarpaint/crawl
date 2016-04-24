@@ -1,0 +1,10 @@
+{
+  "name": "crawl",
+  "version": "0.0.1",
+  "description": "Simple web crawler",
+  "dependencies": {
+    "request": "^2.72.0",
+    "xmldom": "^0.1.22",
+    "xpath": "0.0.23"
+  }
+}
