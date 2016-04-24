@@ -39,8 +39,9 @@ var sitemap = {
     pooledRequest = request.defaults({ pool: { maxSockets: argv['pool-size'] } }),
     rootInfo = getUrlInfo(argv.url),
     rootUrl = rootInfo.fullUrl,
+    imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg'],
     imageTags = ['img', 'svg'],
-    imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
+    startTime = new Date();
 
 function main() {
   getSitemap(rootUrl);
@@ -133,7 +134,7 @@ function getSitemap(url) {
       process.stdout.write(`Processed: ${ processedCount }     Pending: ${ pendingCount }     \r`);
 
       if(!pendingCount) {
-        console.log(`Processed URLs: ${ processedCount }`);
+        console.log(`\nEllapsed time: ${ formatMs(getDiffFromNow(startTime)) }`);
 
         if(argv.debug) {
           console.log('Ignored:', JSON.stringify(ignoredUrls, null, 2));
@@ -204,7 +205,7 @@ function isImageNode(node) {
 }
 
 function datePad(number) {
-  return number < 10 ? '0' + number : number;
+  return number < 10 ? `0${ number }` : number;
 }
 
 function formatDate(dateString) {
@@ -225,6 +226,19 @@ function saveXMLSitemap(sitemap) {
       console.log(`Sitemap saved to ./${ argv.output }`);
     }
   });
+}
+
+function getDiffFromNow(then) {
+  return (new Date()).getTime() - then.getTime();
+}
+
+function formatMs(time) {
+  let seconds = Math.floor(time/1000),
+      minutes = Math.floor(seconds/60);
+
+  seconds = datePad(seconds % 60);
+
+  return `${ minutes }:${ seconds }`;
 }
 
 main();
