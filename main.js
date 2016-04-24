@@ -11,8 +11,8 @@ var sitemap = [],
     errorUrls = {},
     ignoredUrls = {},
     processedCount = 0,
-    poolRequest = request.defaults({ pool: { maxSockets: 8 } }),
     rootUrl = 'http://example.com/',
+    pooledRequest = request.defaults({ pool: { maxSockets: 8 } }),
     rootInfo = getUrlInfo(rootUrl),
     imageTags = ['img', 'svg'],
     imageExtensions = ['png', 'jpg', 'jpeg', 'gif', 'svg'];
@@ -35,7 +35,7 @@ function getSitemap(url) {
     uniqueUrls[url] = true;
     pendingUrls[url] = true;
 
-    poolRequest(url, function (error, response, body) {
+    pooledRequest(url, function (error, response, body) {
       if (!error && response.statusCode == 200) {
         let attributes = ['href', 'src'],
         doc = new dom({ errorHandler: function() {} }).parseFromString(body),
