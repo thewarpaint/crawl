@@ -9,6 +9,8 @@ var sitemap = [],
     uniqueUrls = {},
     pendingUrls = {},
     errorUrls = {},
+    ignoredUrls = {},
+    processedCount = 0,
     poolRequest = request.defaults({ pool: { maxSockets: 8 } }),
     rootUrl = 'http://example.com/',
     rootInfo = getUrlInfo(rootUrl),
@@ -29,7 +31,6 @@ function getSitemap(url) {
       videos: []
     };
 
-    console.log(`Processing: ${ url }`);
     sitemap.push(page);
     uniqueUrls[url] = true;
     pendingUrls[url] = true;
@@ -44,8 +45,6 @@ function getSitemap(url) {
           try {
             nodes = nodes.concat(xpath.select(`//@${ attribute }`, doc));
           } catch(e) {
-            console.log(e);
-            console.log('Failed: ', url);
             errorUrls[url] = e.toString();
           }
         });
@@ -76,27 +75,28 @@ function getSitemap(url) {
               }
             } else {
               if(!uniqueUrls[info.fullUrl]) {
-                console.log(`Ignoring: ${ info.fullUrl }`);
                 uniqueUrls[info.fullUrl] = true;
+                ignoredUrls[info.fullUrl] = true;
               }
             }
           }
         });
       } else {
-        console.log('HTTP request failed: ', url, error,
-          response ? response.statusCode : 'undefined status code');
-        errorUrls[url] = error;
+        errorUrls[url] = error + ' ' +
+          (response && response.statusCode ? response.statusCode : 'undefined status code');
       }
 
+      processedCount++;
       delete pendingUrls[url];
 
       let pendingCount = Object.keys(pendingUrls).length;
 
-      console.log('Pending: ', pendingCount);
+      process.stdout.write(`Processed: ${ processedCount }\t Pending: ${ pendingCount }\t\t\r`);
 
       if(!pendingCount) {
         console.log(JSON.stringify(sitemap, null, 2));
-        console.log(errorUrls);
+        console.log('Ignored:', JSON.stringify(ignoredUrls, null, 2));
+        console.log('Failed:', JSON.stringify(errorUrls, null, 2));
       }
     });
   }
