@@ -22,6 +22,7 @@ var argv = require('yargs')
       .argv,
     dom = require('xmldom').DOMParser,
     fs = require('fs'),
+    Q = require('q'),
     request = require('request'),
     utils = require('./utils'),
     xmlparser = require('js2xmlparser'),
@@ -44,10 +45,20 @@ var sitemap = {
     startTime = new Date();
 
 function main() {
-  getSitemap(rootUrl);
+  getSitemap(rootUrl).then(function (xmlString) {
+    saveXML(argv.output, xmlString);
+  });
 }
 
 function getSitemap(url) {
+  let deferred = Q.defer();
+
+  processUrl(url, deferred);
+
+  return deferred.promise;
+}
+
+function processUrl(url, deferred) {
   if(!uniqueUrls[url]) {
     let page = {
       loc: url,
@@ -111,7 +122,7 @@ function getSitemap(url) {
                   page['script:script'].push(details);
                 }
               } else {
-                getSitemap(info.fullUrl);
+                processUrl(info.fullUrl, deferred);
               }
             } else {
               if(!uniqueUrls[info.fullUrl]) {
@@ -141,7 +152,7 @@ function getSitemap(url) {
           console.log(`Failed: ${ JSON.stringify(errorUrls, null, 2) }`);
         }
 
-        saveXMLSitemap(sitemap);
+        deferred.resolve(xmlparser('urlset', sitemap));
       }
     });
   }
@@ -204,12 +215,12 @@ function isImageNode(node) {
   return imageTags.indexOf(node.ownerElement.tagName) !== -1 || imageExtensions.indexOf(extension) !== -1;
 }
 
-function saveXMLSitemap(sitemap) {
-  fs.writeFile(`./${ argv.output }`, xmlparser('urlset', sitemap), function (error) {
+function saveXML(dest, xmlString) {
+  fs.writeFile(`${ dest }`, xmlString, function (error) {
     if(error) {
-      console.log(`Writing ./${ argv.output } failed: ${ error }`);
+      console.log(`Writing ${ dest } failed: ${ error }`);
     } else {
-      console.log(`Sitemap saved to ./${ argv.output }`);
+      console.log(`Sitemap saved to ${ dest }`);
     }
   });
 }
