@@ -137,8 +137,8 @@ function getSitemap(url) {
         console.log(`\nEllapsed time: ${ formatMs(getDiffFromNow(startTime)) }`);
 
         if(argv.debug) {
-          console.log('Ignored:', JSON.stringify(ignoredUrls, null, 2));
-          console.log('Failed:', JSON.stringify(errorUrls, null, 2));
+          console.log(`Ignored: ${ JSON.stringify(ignoredUrls, null, 2) }`);
+          console.log(`Failed: ${ JSON.stringify(errorUrls, null, 2) }`);
         }
 
         saveXMLSitemap(sitemap);
