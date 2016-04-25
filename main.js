@@ -20,10 +20,10 @@ var argv = require('yargs')
       .describe('extras', 'Include extra static assets (JS, CSS) in the sitemap (experimental, not standard)')
       .default({ debug: false, extras: false, output: 'sitemap.xml', 'pool-size': 8 })
       .argv,
-    crypto = require('crypto'),
     dom = require('xmldom').DOMParser,
     fs = require('fs'),
     request = require('request'),
+    utils = require('./utils'),
     xmlparser = require('js2xmlparser'),
     xpath = require('xpath');
 
@@ -67,10 +67,10 @@ function getSitemap(url) {
     pooledRequest(url, function (error, response, body) {
       if (!error && response.statusCode == 200) {
         if(response.headers['last-modified']) {
-          page.lastmod = formatDate(response.headers['last-modified']);
+          page.lastmod = utils.formatDate(response.headers['last-modified']);
         }
 
-        page['content:hash'] = getMD5Hash(body);
+        page['content:hash'] = utils.getMD5Hash(body);
 
         let attributes = ['href', 'src'],
             doc = new dom({ errorHandler: function() {} }).parseFromString(body),
@@ -134,7 +134,7 @@ function getSitemap(url) {
       process.stdout.write(`Processed: ${ processedCount }     Pending: ${ pendingCount }     \r`);
 
       if(!pendingCount) {
-        console.log(`\nEllapsed time: ${ formatMs(getDiffFromNow(startTime)) }`);
+        console.log(`\nEllapsed time: ${ utils.formatMs(utils.getDiffFromNow(startTime)) }`);
 
         if(argv.debug) {
           console.log(`Ignored: ${ JSON.stringify(ignoredUrls, null, 2) }`);
@@ -204,20 +204,6 @@ function isImageNode(node) {
   return imageTags.indexOf(node.ownerElement.tagName) !== -1 || imageExtensions.indexOf(extension) !== -1;
 }
 
-function datePad(number) {
-  return number < 10 ? `0${ number }` : number;
-}
-
-function formatDate(dateString) {
-  let date = new Date(dateString);
-
-  return `${ date.getFullYear() }-${ datePad(date.getMonth() + 1) }-${ date.getDate() }`;
-}
-
-function getMD5Hash(data) {
-  return crypto.createHash('md5').update(data).digest('hex');
-}
-
 function saveXMLSitemap(sitemap) {
   fs.writeFile(`./${ argv.output }`, xmlparser('urlset', sitemap), function (error) {
     if(error) {
@@ -226,19 +212,6 @@ function saveXMLSitemap(sitemap) {
       console.log(`Sitemap saved to ./${ argv.output }`);
     }
   });
-}
-
-function getDiffFromNow(then) {
-  return (new Date()).getTime() - then.getTime();
-}
-
-function formatMs(time) {
-  let seconds = Math.floor(time/1000),
-      minutes = Math.floor(seconds/60);
-
-  seconds = datePad(seconds % 60);
-
-  return `${ minutes }:${ seconds }`;
 }
 
 main();
