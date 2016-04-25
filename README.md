@@ -6,7 +6,7 @@ Simple web crawler
 
 `$ node main.js --url https://example.com/`
 
-## Options
+### Options
 
 + `-u, --url`
     Domain to analyze. If no protocol is specified `http` is assumed. Required.
@@ -18,7 +18,7 @@ Simple web crawler
     Show ignored and failing URLs.
 
 + `-p, --pool-size`
-    Show ignored and failing URLs.
+    Maximum number of concurrent connections.
 
 + `-e, --extras`
     Include extra static assets (JS, CSS) in the sitemap (experimental, not standard).
