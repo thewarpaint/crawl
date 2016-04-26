@@ -8,7 +8,7 @@ Install the NPM dependencies and run the main script:
 
 ```bash
 $ npm install
-$ node main.js --url https://example.com/
+$ node main.js --url https://gocardless.com/
 ```
 
 ### Options
